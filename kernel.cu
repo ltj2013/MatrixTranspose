@@ -26,8 +26,8 @@ __global__ void addKernel(int *c, const int *a, const int *b)
 
 int main()
 {
-	const int WIDTH = 1024;
-	const int HEIGHT = 1024;
+	const int WIDTH = 4096 ;
+	const int HEIGHT = 4096;
 	const int Length = WIDTH*HEIGHT;
 	//int array[1048576];
 	//Matrix<int, WIDTH, HEIGHT> matrix(array);
@@ -35,16 +35,16 @@ int main()
 	float *input = new float[Length];
 	for (int i = 0; i < Length; i++)
 		input[i] = i;
-	const int num_rows = 1024;
-	const int num_cols = 1024;
+	const int num_rows = WIDTH;
+	const int num_cols = HEIGHT;
 
 	float *input_matrix;
 	float *output_matrix;
 
-	cudaMalloc((void**)&input_matrix, sizeof(float) * 1024*1024);
-	cudaMalloc((void**)&output_matrix, sizeof(float) * 1024*1024);
+	cudaMalloc((void**)&input_matrix, sizeof(float) * HEIGHT *HEIGHT);
+	cudaMalloc((void**)&output_matrix, sizeof(float) * HEIGHT *HEIGHT);
 
-	cudaMemcpy(input_matrix, input, sizeof(float) * 1024*1024, cudaMemcpyHostToDevice);
+	cudaMemcpy(input_matrix, input, sizeof(float) * HEIGHT *HEIGHT, cudaMemcpyHostToDevice);
 
 	int grid_size = (num_rows - 1) / BLOCKSIZE + 1;
 	dim3 gridDim(grid_size, grid_size);
@@ -59,7 +59,7 @@ int main()
 
 	clock_t result2 = clock() - result;
 
-	cudaMemcpy(input,output_matrix, sizeof(float) * 1024 * 1024, cudaMemcpyDeviceToHost);
+	cudaMemcpy(input,output_matrix, sizeof(float) * HEIGHT * HEIGHT, cudaMemcpyDeviceToHost);
 
 
 	//record the execution time 
@@ -78,11 +78,19 @@ int main()
 	std::cout << gpu_elapsed_time_ms << std::endl;
 
 	cudaEventRecord(start, 0);
-	coalescedBlockWiseTranspose<float> << <gridDim, blockDim >> > (input_matrix, output_matrix, num_rows, num_cols);
+
+	cudaStream_t stream1, stream2;
+	cudaStreamCreate(&stream1);
+	cudaStreamCreate(&stream2);
+	coalescedBlockWiseTranspose<float> << <gridDim, blockDim,0,stream1>> > (input_matrix, output_matrix, num_rows, num_cols);
+	coalescedBlockWiseTransposeWithNoBankConflicts<float> << <gridDim, blockDim,0,stream2>> > (input_matrix, output_matrix, num_rows, num_cols);
+
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
 	cudaEventElapsedTime(&gpu_elapsed_time_ms, start, stop);
 
+
+	
 	std::cout << gpu_elapsed_time_ms << std::endl;
 
 	cudaFree(input_matrix);

@@ -66,7 +66,7 @@ __global__ void baseBlockWiseTranspose(const T* input, T* output, int width, int
 	const int out_index = index_x * height + index_y;
 
 	if (index_x < width && index_y < height) {
-		temporary[threadIdx.y][threadIdx.x] = input[in_index];
+		temporary[threadIdx.x][threadIdx.y] = input[in_index];
 		
 		__syncthreads();
 
@@ -93,9 +93,16 @@ __global__ void coalescedBlockWiseTranspose(const T* input, T* output, int width
 
 	if (index_x < width && index_y < height) {
 		temporary[threadIdx.y][threadIdx.x] = input[in_index];
-
+		
 		__syncthreads();
-
+		//temporary[threadIdx.x][threadIdx.y] = temporary[threadIdx.y][threadIdx.x];
+		//__syncthreads();
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
 		output[out_index] = temporary[threadIdx.x][threadIdx.y];
 	}
 }
@@ -103,7 +110,7 @@ __global__ void coalescedBlockWiseTranspose(const T* input, T* output, int width
 template<typename T>
 __global__ void coalescedBlockWiseTransposeWithNoBankConflicts(const T* input, T* output, int width, int height) {
 
-	__shared__ T temporary[BLOCKSIZE][BLOCKSIZE + 1];
+	__shared__ T temporary[BLOCKSIZE][BLOCKSIZE+1];
 
 	const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
 	const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -121,6 +128,12 @@ __global__ void coalescedBlockWiseTransposeWithNoBankConflicts(const T* input, T
 
 		__syncthreads();
 
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
+		output[out_index] = temporary[threadIdx.x][threadIdx.y];
 		output[out_index] = temporary[threadIdx.x][threadIdx.y];
 	}
 }
