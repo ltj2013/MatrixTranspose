@@ -24,6 +24,14 @@ __global__ void addKernel(int *c, const int *a, const int *b)
     c[i] = a[i] + b[i];
 }
 
+__device__ float device_symbol;
+void setDeviceSymbol() {
+
+	float host_symbol = 0;
+	cudaError_t err = cudaMemcpyToSymbol(&device_symbol, &host_symbol, sizeof(float));
+}
+
+
 int main()
 {
 	const int WIDTH = 4096 ;
@@ -32,6 +40,12 @@ int main()
 	//int array[1048576];
 	//Matrix<int, WIDTH, HEIGHT> matrix(array);
 	
+	int device_count = 0;
+	cudaGetDeviceCount(&device_count);
+	cudaSetDevice(device_count);
+	
+	cout << device_count << endl;
+
 	float *input = new float[Length];
 	for (int i = 0; i < Length; i++)
 		input[i] = i;
@@ -40,6 +54,11 @@ int main()
 
 	float *input_matrix;
 	float *output_matrix;
+
+	float *host_input_matrix;
+	float *host_output_matrix;
+
+	cudaHostAlloc((void**)&host_input_matrix, sizeof(float)*HEIGHT*HEIGHT,1);
 
 	cudaMalloc((void**)&input_matrix, sizeof(float) * HEIGHT *HEIGHT);
 	cudaMalloc((void**)&output_matrix, sizeof(float) * HEIGHT *HEIGHT);
@@ -93,8 +112,17 @@ int main()
 	
 	std::cout << gpu_elapsed_time_ms << std::endl;
 
+	cudaError_t err = cudaGetLastError();
+
+	cudaEventDestroy(start);
+	cudaEventDestroy(stop);
+
+	cudaStreamDestroy(stream1);
+	cudaStreamDestroy(stream2);
+
 	cudaFree(input_matrix);
 	cudaFree(output_matrix);
+
 //	for (int i = 0; i < 1024; i++)
 		//cout<<input[i]<<endl;
 	return 0;
